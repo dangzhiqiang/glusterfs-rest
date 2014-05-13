@@ -7,26 +7,10 @@
 """
 
 from glusterfsrest import utils
-import xml.etree.cElementTree as etree
+from glusterfsrest.exceptions import GlusterCliBadXml, ParseError
 
 
 VOLUME_CMD = ['gluster', '--mode=script', 'volume']
-ParseError = etree.ParseError if hasattr(etree, 'ParseError') else SyntaxError
-
-
-class GlusterCliFailure(Exception):
-    pass
-
-
-class GlusterCliBadXml(Exception):
-    pass
-
-
-def _checkxmlcorrupt(xmldata):
-    try:
-        return etree.fromstring(xmldata)
-    except (ParseError, AttributeError, ValueError) as e:
-        raise GlusterCliBadXml(str(e))
 
 
 def _parse_a_vol(volume_el):
@@ -66,7 +50,7 @@ def _parse_a_vol(volume_el):
 
 
 def _parseinfo(volinfo):
-    tree = _checkxmlcorrupt(volinfo)
+    tree = utils.checkxmlcorrupt(volinfo)
     volumes = []
     for el in tree.findall('volInfo/volumes/volume'):
         try:
@@ -77,75 +61,70 @@ def _parseinfo(volinfo):
     return volumes
 
 
-def statuszerotrue(func):
-    def wrapper(*args, **kwargs):
-        cmd = func(*args, **kwargs)
-        rc, _, err = utils.execute(cmd + ['--xml'])
-        if rc == 0:
-            return True
-
-        return GlusterCliFailure(err)
-
-    return wrapper
-
-
-def execute_and_output(cmd, func):
-    rc, out, err = utils.execute(cmd + ['--xml'])
-    if rc == 0:
-        return func(out)
-
-    return GlusterCliFailure(rc, err)
-
-
 def info(name=None):
     cmd = VOLUME_CMD + ["info"] + ([name] if name else [])
-    return execute_and_output(cmd, _parseinfo)
+    return utils.execute_and_output(cmd, _parseinfo)
 
 
-@statuszerotrue
-def start(name):
-    return VOLUME_CMD + ["start", name]
+@utils.statuszerotrue
+def start(name, force=False):
+    cmd = VOLUME_CMD + ["start", name]
+    if force:
+        cmd += ["force"]
+
+    return cmd
 
 
-@statuszerotrue
+@utils.statuszerotrue
 def stop(name, force=False):
-    return VOLUME_CMD + ["stop", name]
+    cmd = VOLUME_CMD + ["stop", name]
+    if force:
+        cmd += ["force"]
+
+    return cmd
 
 
-@statuszerotrue
-def create(name):
-    return VOLUME_CMD + ["create", name]
+@utils.statuszerotrue
+def create(name, bricks, stripe=0, replica=0, transport='tcp', force=False):
+    cmd = VOLUME_CMD + ["create", name]
+    if stripe > 0:
+        cmd += ["stripe", stripe]
+
+    if replica > 0:
+        cmd += ["stripe", stripe]
+
+    cmd += ["transport", transport]
+
+    cmd += bricks
+
+    if force:
+        cmd += ["force"]
+
+    return cmd
 
 
-@statuszerotrue
-def delete(name, force):
-    return VOLUME_CMD + ["delete", name]
+@utils.statuszerotrue
+def delete(name, force=False):
+    cmd = VOLUME_CMD + ["delete", name]
+    if force:
+        cmd += ["force"]
+
+    return cmd
 
 
 def restart(name):
-    stop(force=True)
-    start()
-
-
-# def optget(volumename, opt=None):
-#     cmd = VOLUME_CMD + ["info"] + [name] if name else []
-#     return execute_and_output(cmd, _parseopt)
-
-
-# @statuszerotrue
-# def optset(volumename, opt, value):
-#     pass
+    start(force=True)
 
 
 def healinfo(name):
     pass
 
 
-@statuszerotrue
+@utils.statuszerotrue
 def addbrick(volumename, brickpath):
     pass
 
 
-@statuszerotrue
+@utils.statuszerotrue
 def removebrick(volumename, brickpath):
     pass

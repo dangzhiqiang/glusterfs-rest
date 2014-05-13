@@ -33,7 +33,7 @@ POST   /api/1/volumes/:name/start-force
 POST   /api/1/volumes/:name/stop-force
 POST   /api/1/volumes/:name/restart
 PUT    /api/1/volumes/:name/add-brick
-PUT    /api/1/volumes/:name/remove-brick
+DELETE /api/1/volumes/:name/remove-brick
 POST   /api/1/volumes/:name/set
 POST   /api/1/volumes/:name/reset
 

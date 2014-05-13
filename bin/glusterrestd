@@ -1,2 +1,4 @@
 #!/bin/bash
-/usr/bin/gunicorn glusterfsrest.api:app "$@"
+PORT=$(cat /var/lib/glusterd/rest/port)
+typeset -i PORT
+/usr/bin/gunicorn glusterfsrest.api:app -b :$PORT "$@"

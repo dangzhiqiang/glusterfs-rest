@@ -8,8 +8,7 @@
 
 import getpass
 import sys
-from glusterfsrest import cliargs, users
-from glusterfsrest.config import PORT_FILE, GROUPS
+from glusterfsrest import cliargs, users, settings
 
 
 def show_users():
@@ -21,22 +20,17 @@ def show_users():
 
 def show_config():
     sys.stdout.write("%10s %10s\n" % ("Config", "Value"))
-    port = 9000
-    with open(PORT_FILE) as f:
-        port = f.read()
-    sys.stdout.write("%10s %10s\n" % ("Port", port))
+    sys.stdout.write("%10s %10s\n" % ("Port", settings.get("PORT")))
 
 
 def show_groups():
     sys.stdout.write("Available Groups:\n----------------\n")
-    for g in GROUPS:
+    for g in settings.get("GROUPS").split(","):
         sys.stdout.write("%s\n" % g)
 
 
 def set_port(value):
-    with open(PORT_FILE, "w") as f:
-        f.write(str(value))
-
+    settings.set('port', value)
     sys.stdout.write("Port updated successfully, "
                      "Restart glusterrestd to use the latest port")
     return 0

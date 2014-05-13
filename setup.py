@@ -20,6 +20,9 @@ setup(
             "glusterrest = glusterfsrest.glusterrest:main",
         ]
     },
+    data_files=[('/usr/local/bin', ['bin/glusterrestd']),
+                ('/var/lib/glusterd/rest/',
+                 ['data/port'])],
     platforms="linux",
     zip_safe=False,
     author="Aravinda VK",
