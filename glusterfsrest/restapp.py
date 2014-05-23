@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
-"""
-    restapp.py
+#
+# Copyright (c) 2014 Red Hat, Inc. <http://www.redhat.com>
+# This file is part of GlusterFS.
 
-    :copyright: (c) 2014 by Aravinda VK
-    :license: BSD, see LICENSE for more details.
-"""
+# This file is licensed to you under your choice of the GNU Lesser
+# General Public License, version 3 or any later version (LGPLv3 or
+# later), or the GNU General Public License, version 2 (GPLv2), in all
+# cases as published by the Free Software Foundation.
+#
 
+import types
 from flask import Flask, request, jsonify
 from functools import wraps
-from glusterfsrest import users, settings
+from glusterfsrest import users
+from glusterfsrest.config import APP_DEBUG
+from glusterfsrest.exceptions import GlusterCliBadXml, GlusterCliFailure
 
 app = Flask(__name__)
-app.debug = settings.get("APP_DEBUG")
+app.debug = APP_DEBUG
 users.connect()
 
 
@@ -36,6 +42,27 @@ def resp_error(code, error, headers=None):
     return resp
 
 
+def run_and_response(func, args):
+    """
+    Gets func to execute and arguments,
+    if execution is success then sends response
+    as {ok: true, data: <DATA>}
+    else {ok: false, error: <ERROR>}
+    """
+    try:
+        return resp_success(func(*args))
+    except (GlusterCliFailure, GlusterCliBadXml) as e:
+        return resp_error(200, str(e).strip())
+
+
+def get_post_data(key, default_value=None):
+    val = request.form[key] if key in request.form else default_value
+    if isinstance(default_value, types.BooleanType):
+        val = True if val else False
+
+    return val
+
+
 @app.errorhandler(404)
 def not_found(error):
     return resp_error(404, str(error))
@@ -44,6 +71,11 @@ def not_found(error):
 @app.errorhandler(403)
 def forbidden(error):
     return resp_error(403, str(error))
+
+
+@app.errorhandler(405)
+def notsupported(error):
+    return resp_error(405, str(error))
 
 
 def authenticate_error():
@@ -67,7 +99,3 @@ def requires_auth(groups=[]):
             return f(*args, **kwargs)
         return decorated
     return requires_auth_decorator
-
-
-def start(host, port):
-    app.run(port=port)

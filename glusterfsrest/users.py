@@ -1,13 +1,16 @@
 # -*- coding: utf-8 -*-
-"""
-    users.py
+#
+# Copyright (c) 2014 Red Hat, Inc. <http://www.redhat.com>
+# This file is part of GlusterFS.
 
-    :copyright: (c) 2014 by Aravinda VK
-    :license: BSD, see LICENSE for more details.
-"""
+# This file is licensed to you under your choice of the GNU Lesser
+# General Public License, version 3 or any later version (LGPLv3 or
+# later), or the GNU General Public License, version 2 (GPLv2), in all
+# cases as published by the Free Software Foundation.
+#
 
 import sqlite3
-from glusterfsrest import settings
+from glusterfsrest.config import USERS_DB
 import hashlib
 
 
@@ -21,7 +24,7 @@ def pwdhash(inp):
 
 def connect():
     global conn, cursor
-    conn = sqlite3.connect(settings.get("USERS_DB"))
+    conn = sqlite3.connect(USERS_DB)
     cursor = conn.cursor()
 
 
@@ -110,7 +113,6 @@ def authenticate(username, password, groups):
     """
     cursor.execute(query, (username, pwdhash(password)))
     row = cursor.fetchone()
-
     if row is None:
         return False
 
@@ -118,6 +120,15 @@ def authenticate(username, password, groups):
         return True
 
     return False
+
+
+def exists(username):
+    query = """
+    SELECT username FROM glusterrestusers WHERE username = ?
+    """
+    cursor.execute(query, (username, ))
+    rows = cursor.fetchall()
+    return True if rows else False
 
 
 def get():

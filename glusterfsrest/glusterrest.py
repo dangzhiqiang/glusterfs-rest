@@ -1,15 +1,26 @@
 # -*- coding: utf-8 -*-
-"""
-    glusterrest.py
+#
+# Copyright (c) 2014 Red Hat, Inc. <http://www.redhat.com>
+# This file is part of GlusterFS.
 
-    :copyright: (c) 2014 by Aravinda VK
-    :license: BSD, see LICENSE for more details.
-"""
+# This file is licensed to you under your choice of the GNU Lesser
+# General Public License, version 3 or any later version (LGPLv3 or
+# later), or the GNU General Public License, version 2 (GPLv2), in all
+# cases as published by the Free Software Foundation.
+#
 
 import getpass
 import sys
+import os
 from glusterfsrest import cliargs, users
-from glusterfsrest.config import PORT_FILE, GROUPS
+from glusterfsrest.config import PORT_FILE, GROUPS, USERS_DB
+
+
+def validate_groupname(grp):
+    if grp not in GROUPS:
+        sys.stderr.write("Invalid group %s\nAvailable groups: %s" %
+                         (grp, ",".join(GROUPS)))
+        sys.exit(1)
 
 
 def show_users():
@@ -37,8 +48,9 @@ def set_port(value):
     with open(PORT_FILE, "w") as f:
         f.write(str(value))
 
+    os.chmod(PORT_FILE, 0700)
     sys.stdout.write("Port updated successfully, "
-                     "Restart glusterrestd to use the latest port")
+                     "Restart glusterrestd to use the latest port\n")
     return 0
 
 
@@ -72,32 +84,65 @@ def get_password():
     return passwd
 
 
-def main():
+def main_i():
+    if os.getuid() != 0:
+        sys.stderr.write("Only root can run this\n")
+        sys.exit(1)
+
     args = cliargs.get()
     users.connect()
     ret = 0
     if args.subcommand == 'install':
         ret = users.install()
+        os.chmod(USERS_DB, 0700)
+        os.chmod(PORT_FILE, 0700)
     elif args.subcommand == 'reinstall':
         ret = users.reinstall()
+        os.chmod(USERS_DB, 0700)
+        os.chmod(PORT_FILE, 0700)
     elif args.subcommand == 'show':
         ret = globals()["show_%s" % args.option]()
     elif args.subcommand == 'port':
         ret = set_port(args.port)
     elif args.subcommand == 'useradd':
+        if users.exists(args.username):
+            sys.stderr.write('User %s already exist\n' % args.username)
+            sys.exit(1)
+
+        validate_groupname(args.group.lower().strip())
+
         if args.password == '':
             args.password = get_password()
-        ret = useradd(args.username, args.password, args.group)
+        ret = useradd(args.username, args.password, args.group.lower().strip())
     elif args.subcommand == 'usermod':
-        ret = usermod(args.username, args.group)
+        if not users.exists(args.username):
+            sys.stderr.write('User %s does not exist\n' % args.username)
+            sys.exit(1)
+            validate_groupname(args.group.lower().strip())
+        ret = usermod(args.username, args.group.lower().strip())
     elif args.subcommand == 'userdel':
+        if not users.exists(args.username):
+            sys.stderr.write('User %s does not exist\n' % args.username)
+            sys.exit(1)
+
         ret = userdel(args.username)
     elif args.subcommand == 'passwd':
+        if not users.exists(args.username):
+            sys.stderr.write('User %s does not exist\n' % args.username)
+            sys.exit(1)
+
         if args.password == '':
             args.password = get_password()
         ret = usermod(args.username, args.password)
 
     sys.exit(0 if ret else 1)
+
+
+def main():
+    try:
+        main_i()
+    except KeyboardInterrupt:
+        sys.exit(1)
 
 
 if __name__ == '__main__':

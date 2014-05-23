@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
-"""
-    cli.volume.py
+#
+# Copyright (c) 2014 Red Hat, Inc. <http://www.redhat.com>
+# This file is part of GlusterFS.
 
-    :copyright: (c) 2014 by Aravinda VK
-    :license: BSD, see LICENSE for more details.
-"""
+# This file is licensed to you under your choice of the GNU Lesser
+# General Public License, version 3 or any later version (LGPLv3 or
+# later), or the GNU General Public License, version 2 (GPLv2), in all
+# cases as published by the Free Software Foundation.
+#
 
 from glusterfsrest import utils
 from glusterfsrest.exceptions import GlusterCliBadXml, ParseError
+from glusterfsrest.exceptions import GlusterCliFailure
 
 
 VOLUME_CMD = ['gluster', '--mode=script', 'volume']
@@ -27,7 +31,6 @@ def _parse_a_vol(volume_el):
         'bricks': [],
         'options': []
     }
-    print value
     if value['transport'] == '0':
         value['transport'] = 'TCP'
     elif value['transport'] == '1':
@@ -63,35 +66,37 @@ def _parseinfo(volinfo):
 
 def info(name=None):
     cmd = VOLUME_CMD + ["info"] + ([name] if name else [])
-    return utils.execute_and_output(cmd, _parseinfo)
+    data = utils.execute_and_output(cmd, _parseinfo)
+    if name and not data:
+        raise GlusterCliFailure("Volume %s does not exist" % name)
+
+    return data
 
 
-@utils.statuszerotrue
 def start(name, force=False):
     cmd = VOLUME_CMD + ["start", name]
     if force:
         cmd += ["force"]
 
-    return cmd
+    return utils.checkstatuszero(cmd)
 
 
-@utils.statuszerotrue
 def stop(name, force=False):
     cmd = VOLUME_CMD + ["stop", name]
     if force:
         cmd += ["force"]
 
-    return cmd
+    return utils.checkstatuszero(cmd)
 
 
-@utils.statuszerotrue
-def create(name, bricks, stripe=0, replica=0, transport='tcp', force=False):
+def create(name, bricks, replica=0, stripe=0, transport='tcp', force=False,
+           start_volume=False):
     cmd = VOLUME_CMD + ["create", name]
     if stripe > 0:
-        cmd += ["stripe", stripe]
+        cmd += ["stripe", str(stripe)]
 
     if replica > 0:
-        cmd += ["stripe", stripe]
+        cmd += ["replica", str(replica)]
 
     cmd += ["transport", transport]
 
@@ -100,31 +105,84 @@ def create(name, bricks, stripe=0, replica=0, transport='tcp', force=False):
     if force:
         cmd += ["force"]
 
-    return cmd
+    # If volume needs to be started, then run create command without
+    # decorator else return create command and statuszerotrue
+    # decorator will take care of running cmd
+    if start_volume:
+        utils.checkstatuszero(cmd)
+        return start(name, force=True)
+    else:
+        return utils.checkstatuszero(cmd)
 
 
-@utils.statuszerotrue
-def delete(name, force=False):
+def delete(name, stop_volume=False):
+    if stop_volume:
+        stop(name, force=True)
+
     cmd = VOLUME_CMD + ["delete", name]
-    if force:
-        cmd += ["force"]
-
-    return cmd
+    return utils.checkstatuszero(cmd)
 
 
 def restart(name):
-    start(force=True)
+    stop(name, force=True)
+    start(name)
+    return True
 
 
-def healinfo(name):
-    pass
+def addbrick(name, brickpath, replica=0, stripe=0, force=False):
+    cmd = VOLUME_CMD + ["add-brick", name]
+    if stripe:
+        cmd += ["stripe", stripe]
+
+    if replica:
+        cmd += ["replica", replica]
+
+    cmd += [brickpath]
+    if force:
+        cmd += ["force"]
+
+    return utils.checkstatuszero(cmd)
 
 
-@utils.statuszerotrue
-def addbrick(volumename, brickpath):
-    pass
+def removebrickForce(name, brickpath, replica=0):
+    cmd = VOLUME_CMD + ["remove-brick", name]
+
+    if replica:
+        cmd += ["replica", replica]
+
+    cmd += [brickpath, "force"]
+
+    return utils.checkstatuszero(cmd)
 
 
-@utils.statuszerotrue
-def removebrick(volumename, brickpath):
-    pass
+def removebrickStart(name, brickpath, replica=0):
+    cmd = VOLUME_CMD + ["remove-brick", name]
+
+    if replica:
+        cmd += ["replica", replica]
+
+    cmd += [brickpath, "start"]
+
+    return utils.checkstatuszero(cmd)
+
+
+def removebrickStop(name, brickpath, replica=0):
+    cmd = VOLUME_CMD + ["remove-brick", name]
+
+    if replica:
+        cmd += ["replica", replica]
+
+    cmd += [brickpath, "stop"]
+
+    return utils.checkstatuszero(cmd)
+
+
+def removebrickCommit(name, brickpath, replica=0):
+    cmd = VOLUME_CMD + ["remove-brick", name]
+
+    if replica:
+        cmd += ["replica", replica]
+
+    cmd += [brickpath, "commit"]
+
+    return utils.checkstatuszero(cmd)

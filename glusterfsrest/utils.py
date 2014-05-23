@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-    utils.py
+#
+# Copyright (c) 2014 Red Hat, Inc. <http://www.redhat.com>
+# This file is part of GlusterFS.
 
-    :copyright: (c) 2014 by Aravinda VK
-    :license: BSD, see LICENSE for more details.
-"""
+# This file is licensed to you under your choice of the GNU Lesser
+# General Public License, version 3 or any later version (LGPLv3 or
+# later), or the GNU General Public License, version 2 (GPLv2), in all
+# cases as published by the Free Software Foundation.
+#
 
 import subprocess
 import xml.etree.cElementTree as etree
@@ -25,16 +28,12 @@ def execute(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     return (p.returncode, out, err)
 
 
-def statuszerotrue(func):
-    def wrapper(*args, **kwargs):
-        cmd = func(*args, **kwargs)
-        rc, _, err = execute(cmd + ['--xml'])
-        if rc == 0:
-            return True
+def checkstatuszero(cmd):
+    rc, _, err = execute(cmd)
+    if rc == 0:
+        return True
 
-        return GlusterCliFailure(err)
-
-    return wrapper
+    raise GlusterCliFailure(err)
 
 
 def execute_and_output(cmd, func):
@@ -42,7 +41,7 @@ def execute_and_output(cmd, func):
     if rc == 0:
         return func(out)
 
-    return GlusterCliFailure(rc, err)
+    raise GlusterCliFailure(err)
 
 
 def checkxmlcorrupt(xmldata):

@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-"""
-    cli.peer.py
+#
+# Copyright (c) 2014 Red Hat, Inc. <http://www.redhat.com>
+# This file is part of GlusterFS.
 
-    :copyright: (c) 2014 by Aravinda VK
-    :license: BSD, see LICENSE for more details.
-"""
+# This file is licensed to you under your choice of the GNU Lesser
+# General Public License, version 3 or any later version (LGPLv3 or
+# later), or the GNU General Public License, version 2 (GPLv2), in all
+# cases as published by the Free Software Foundation.
+#
 
 from glusterfsrest import utils
 from glusterfsrest.exceptions import GlusterCliBadXml, ParseError
@@ -46,15 +49,13 @@ def info():
     return utils.execute_and_output(cmd, _parsepoollist)
 
 
-@utils.statuszerotrue
 def attach(hostname):
-    return PEER_CMD + ["probe", hostname]
+    return utils.checkstatuszero(PEER_CMD + ["probe", hostname])
 
 
-@utils.statuszerotrue
 def detach(hostname, force=False):
     cmd = PEER_CMD + ["detach", hostname]
     if force:
         cmd += ["force"]
 
-    return cmd
+    return utils.checkstatuszero(cmd)

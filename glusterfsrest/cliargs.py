@@ -1,15 +1,18 @@
 # -*- coding: utf-8 -*-
-"""
-    cliargs.py
+#
+# Copyright (c) 2014 Red Hat, Inc. <http://www.redhat.com>
+# This file is part of GlusterFS.
 
-    :copyright: (c) 2014 by Aravinda VK
-    :license: BSD, see LICENSE for more details.
-"""
-import argparse
+# This file is licensed to you under your choice of the GNU Lesser
+# General Public License, version 3 or any later version (LGPLv3 or
+# later), or the GNU General Public License, version 2 (GPLv2), in all
+# cases as published by the Free Software Foundation.
+#
+
 from argparse import RawDescriptionHelpFormatter, ArgumentParser
 
 PROG_DESCRIPTION = """
-
+GlusterFS REST API Client
 """
 
 
@@ -22,8 +25,9 @@ def get():
                                       metavar='')
 
     # Sub commands
-    subparser.add_parser('install', help=argparse.SUPPRESS)
-    subparser.add_parser('reinstall', help=argparse.SUPPRESS)
+    subparser.add_parser('install', help='Installation')
+    subparser.add_parser('reinstall',
+                         help='Reinstall - Note: Users database will be reset')
     parser_show = subparser.add_parser(
         'show',
         help='Show info about users/groups/config'
@@ -54,9 +58,7 @@ def get():
                                 '--group',
                                 type=str,
                                 help='GROUP',
-                                default='glusteruser',
-                                choices=['glusterroot', 'glusteradmin',
-                                         'glusteruser'])
+                                default='glusteruser')
     parser_useradd.add_argument('-p',
                                 '--password',
                                 type=str,
