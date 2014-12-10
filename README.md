@@ -5,7 +5,8 @@ GlusterFS REST API server
 
 ## Installation
 
-    cd $GLUSTER_SRC/rest
+    git clone https://github.com/aravindavk/glusterfs-rest.git
+    cd glusterfs-rest
     sudo python setup.py install
     sudo glusterrest install # (Reinstall also available, sudo glusterrest reinstall)
 
