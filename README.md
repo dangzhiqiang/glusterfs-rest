@@ -11,6 +11,8 @@ GlusterFS REST API server
 
 ## Usage
 
+Start the glusterrest service using `sudo glusterrestd`
+
 `sudo glusterrest --help` for more details.
 
 ## CLI Guide

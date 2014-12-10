@@ -1,20 +1,17 @@
 # -*- coding: utf-8 -*-
-#
-# Copyright (c) 2014 Red Hat, Inc. <http://www.redhat.com>
-# This file is part of GlusterFS.
+"""
+    setup.py
 
-# This file is licensed to you under your choice of the GNU Lesser
-# General Public License, version 3 or any later version (LGPLv3 or
-# later), or the GNU General Public License, version 2 (GPLv2), in all
-# cases as published by the Free Software Foundation.
-#
+    :copyright: (c) 2014 by Aravinda VK
+    :license: MIT, see LICENSE for more details.
+"""
 
 from setuptools import setup
 
 
 setup(
     name="GlusterFS REST API Server",
-    version="0.1",
+    version="0.2",
     packages=["glusterfsrest", "glusterfsrest.cli"],
     include_package_data=True,
     install_requires=['argparse', 'flask', 'gunicorn', 'pyyaml'],
